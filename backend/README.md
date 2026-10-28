@@ -46,3 +46,15 @@ RequestTimeout: 30s
 因此无论是 `cd backend && go run ./cmd`，还是在仓库根目录直接启动二进制，都能正确加载配置。
 启动日志会打印实际使用的配置文件路径与加载到的集群数量；若 kubeconfig 路径不存在，会逐条输出告警。
 运行期通过集群管理页面新增/移除集群会写回该配置文件（保留其它配置与注释）。
+## 集群管理与认证方式
+
+在「集群管理」页面可添加、编辑、移除集群，支持两种认证方式：
+
+- **KubeConfig**：填写后端服务器上的文件路径，或直接粘贴 kubeconfig 内容（会生成到
+  `config.yaml` 同级的 `kubeconfigs/<集群名>.yaml`，权限 0600）。
+- **API Server + Token**：填写 API Server 地址与 Bearer Token，可选 CA 证书（PEM）
+  或跳过 TLS 校验；同样会生成独立 kubeconfig 文件。
+
+添加/编辑时会先校验连接（超时 10 秒），配置变更会写回 `config.yaml`。
+资源请求由后端 `RequestTimeout` 限制（默认 30 秒），前端另设 15 秒超时并在页面上
+显示「请求超时」错误，避免目标集群不可达时一直等待。

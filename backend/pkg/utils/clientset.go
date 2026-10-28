@@ -2,8 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/gitlayzer/kuberunner/pkg/config"
@@ -106,53 +106,21 @@ func (k *k8s) Init() error {
 	return nil
 }
 
-// AddCluster 校验 kubeconfig 并注册一个新集群。
-func (k *k8s) AddCluster(name, kubeConfigPath string) error {
-	name = strings.TrimSpace(name)
-	kubeConfigPath = strings.TrimSpace(kubeConfigPath)
-	if name == "" || kubeConfigPath == "" {
-		return fmt.Errorf("集群名称与 kubeconfig 路径不能为空")
-	}
-
-	k.mu.RLock()
-	_, exists := k.clientMap[name]
-	k.mu.RUnlock()
-	if exists {
-		return fmt.Errorf("集群 %s 已存在", name)
-	}
-
-	conf, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
-	if err != nil {
-		return fmt.Errorf("读取 kubeconfig 失败: %w", err)
-	}
-	conf.Timeout = config.GetRequestTimeout()
-
-	clientSet, err := kubernetes.NewForConfig(conf)
-	if err != nil {
-		return fmt.Errorf("创建 K8s 客户端失败: %w", err)
-	}
-	if _, err := clientSet.Discovery().ServerVersion(); err != nil {
-		return fmt.Errorf("连接集群失败: %w", err)
-	}
-
-	k.mu.Lock()
-	k.clientMap[name] = clientSet
-	k.kubeConfMap[name] = kubeConfigPath
-	k.mu.Unlock()
-
-	return nil
-}
-
-// RemoveCluster 移除已注册的集群。
+// RemoveCluster 移除已注册的集群，并清理自动生成的 kubeconfig 文件。
 func (k *k8s) RemoveCluster(name string) error {
 	k.mu.Lock()
-	defer k.mu.Unlock()
-
-	if _, ok := k.clientMap[name]; !ok {
+	path, ok := k.kubeConfMap[name]
+	if !ok {
+		k.mu.Unlock()
 		return fmt.Errorf("集群 %s 不存在", name)
 	}
 	delete(k.clientMap, name)
 	delete(k.kubeConfMap, name)
+	k.mu.Unlock()
+
+	if isManagedKubeConfig(path) {
+		_ = os.Remove(path)
+	}
 	return nil
 }
 
@@ -166,17 +134,4 @@ func (k *k8s) KubeConfigs() map[string]string {
 		result[name] = path
 	}
 	return result
-}
-
-// ClusterVersion 返回集群版本，用于连通性展示。
-func (k *k8s) ClusterVersion(name string) (string, error) {
-	client, err := k.GetClient(name)
-	if err != nil {
-		return "", err
-	}
-	version, err := client.Discovery().ServerVersion()
-	if err != nil {
-		return "", err
-	}
-	return version.GitVersion, nil
 }

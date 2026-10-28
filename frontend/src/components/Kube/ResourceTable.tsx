@@ -384,7 +384,12 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
             setTotal(result.total);
             return { data: result.items, total: result.total, success: true };
           } catch (err) {
-            setError(err instanceof Error ? err.message : String(err));
+            const text = err instanceof Error ? err.message : String(err);
+            setError(
+              /timeout/i.test(text)
+                ? '请求超时（15 秒）：目标集群不可达，请检查网络、kubeconfig 或稍后重试'
+                : text,
+            );
             return { data: [], total: 0, success: false };
           }
         }}

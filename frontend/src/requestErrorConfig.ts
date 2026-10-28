@@ -27,6 +27,8 @@ interface ResponseStructure {
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const errorConfig: RequestConfig = {
+  // 全局请求超时：目标集群不可达时尽快失败，避免页面一直等待
+  timeout: 15000,
   // 错误处理： umi@3 的错误处理方案。
   errorConfig: {
     // 错误抛出
@@ -71,6 +73,11 @@ export const errorConfig: RequestConfig = {
               message.error(errorMessage);
           }
         }
+      } else if (
+        error.code === 'ECONNABORTED' ||
+        /timeout/i.test(String(error.message ?? ''))
+      ) {
+        message.error('请求超时（15 秒）：目标集群或后端不可达，请检查网络、kubeconfig 或稍后重试');
       } else if (error.response) {
         // Axios 的错误：优先展示后端返回的中文错误信息
         const { status, data } = error.response;

@@ -387,12 +387,34 @@ export async function drainNode(params: {
   return { message: res.message, result: res.data };
 }
 
+export type ClusterAuthType = 'kubeconfig' | 'token';
+
 export interface ClusterStatus {
   name: string;
   kube_config: string;
+  auth_type?: ClusterAuthType;
+  server?: string;
   version: string;
   reachable: boolean;
   error?: string;
+}
+
+export interface ClusterDetail {
+  name: string;
+  kube_config: string;
+  auth_type: ClusterAuthType;
+  server?: string;
+}
+
+export interface ClusterAuthPayload {
+  name: string;
+  auth_type: ClusterAuthType;
+  kube_config_path?: string;
+  kube_config_content?: string;
+  server?: string;
+  token?: string;
+  ca_data?: string;
+  skip_tls_verify?: boolean;
 }
 
 /** 集群列表与连通性 */
@@ -404,18 +426,37 @@ export async function getClusterStatus(): Promise<ClusterStatus[]> {
   return res.data ?? [];
 }
 
-/** 运行时添加集群 */
+/** 集群配置详情（不含敏感凭据） */
+export async function getClusterDetail(name: string): Promise<ClusterDetail> {
+  const res = await request<KubeAPI.Response<ClusterDetail>>(
+    `${API_PREFIX}/cluster/detail`,
+    { method: 'GET', params: { name } },
+  );
+  return res.data;
+}
+
+/** 运行时添加集群，支持 kubeconfig 与 Token 两种认证 */
 export async function createCluster(
-  name: string,
-  kubeConfigPath: string,
+  payload: ClusterAuthPayload,
 ): Promise<{ message: string; warnings?: string[] }> {
   const res = await request<KubeAPI.Response<null>>(
     `${API_PREFIX}/cluster/create`,
-    { method: 'POST', data: { name, kube_config_path: kubeConfigPath } },
+    { method: 'POST', data: payload },
   );
   return { message: res.message, warnings: res.warnings };
 }
 
+/** 修改集群名称与认证配置 */
+export async function updateCluster(
+  currentName: string,
+  payload: ClusterAuthPayload,
+): Promise<{ message: string; warnings?: string[] }> {
+  const res = await request<KubeAPI.Response<null>>(
+    `${API_PREFIX}/cluster/update`,
+    { method: 'PUT', data: { ...payload, current_name: currentName } },
+  );
+  return { message: res.message, warnings: res.warnings };
+}
 /** 运行时移除集群 */
 export async function removeCluster(
   name: string,

@@ -1,5 +1,9 @@
-import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import type { TableColumnsType } from 'antd';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { useModel } from '@umijs/max';
 import {
@@ -9,30 +13,54 @@ import {
   Form,
   Input,
   Modal,
+  Radio,
   Space,
+  Switch,
   Table,
   Tag,
   Tooltip,
   Typography,
 } from 'antd';
+import type { TableColumnsType } from 'antd';
 import React, { useEffect, useState } from 'react';
 import type { AppModel } from '@/models/app';
 import { invalidateClusters } from '@/components/Kube/useClusters';
 import {
   createCluster,
+  getClusterDetail,
   getClusterStatus,
   removeCluster,
+  updateCluster,
+  type ClusterAuthPayload,
+  type ClusterAuthType,
   type ClusterStatus,
 } from '@/services/kuberunner';
+
+type KubeSource = 'path' | 'content';
+
+interface FormValues {
+  name: string;
+  auth_type: ClusterAuthType;
+  kube_source: KubeSource;
+  kube_config_path?: string;
+  kube_config_content?: string;
+  server?: string;
+  token?: string;
+  ca_data?: string;
+  skip_tls_verify?: boolean;
+}
 
 const ClusterManagePage: React.FC = () => {
   const { cluster, setCluster } = useModel('app') as AppModel;
   const { message, modal, notification } = App.useApp();
   const [statuses, setStatuses] = useState<ClusterStatus[]>([]);
   const [loading, setLoading] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [form] = Form.useForm();
+  const [editing, setEditing] = useState<ClusterStatus>();
+  const [authType, setAuthType] = useState<ClusterAuthType>('kubeconfig');
+  const [kubeSource, setKubeSource] = useState<KubeSource>('path');
+  const [form] = Form.useForm<FormValues>();
 
   const load = async () => {
     setLoading(true);
@@ -50,17 +78,66 @@ const ClusterManagePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAdd = async () => {
-    let values: { name: string; kube_config_path: string };
+  const openCreate = () => {
+    setEditing(undefined);
+    setAuthType('kubeconfig');
+    setKubeSource('path');
+    form.resetFields();
+    form.setFieldsValue({ auth_type: 'kubeconfig', kube_source: 'path' });
+    setOpen(true);
+  };
+
+  const openEdit = async (record: ClusterStatus) => {
+    try {
+      const detail = await getClusterDetail(record.name);
+      setEditing(record);
+      setAuthType(detail.auth_type);
+      setKubeSource('path');
+      form.resetFields();
+      form.setFieldsValue({
+        name: detail.name,
+        auth_type: detail.auth_type,
+        kube_source: 'path',
+        kube_config_path:
+          detail.auth_type === 'kubeconfig' ? detail.kube_config : undefined,
+        server: detail.server,
+      });
+      setOpen(true);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '加载集群配置失败');
+    }
+  };
+
+  const handleSubmit = async () => {
+    let values: FormValues;
     try {
       values = await form.validateFields();
     } catch {
       return;
     }
 
+    const payload: ClusterAuthPayload = {
+      name: values.name.trim(),
+      auth_type: authType,
+    };
+    if (authType === 'kubeconfig') {
+      if (kubeSource === 'path') {
+        payload.kube_config_path = values.kube_config_path?.trim();
+      } else {
+        payload.kube_config_content = values.kube_config_content;
+      }
+    } else {
+      payload.server = values.server?.trim();
+      payload.token = values.token?.trim();
+      payload.ca_data = values.ca_data;
+      payload.skip_tls_verify = Boolean(values.skip_tls_verify);
+    }
+
     setSubmitting(true);
     try {
-      const result = await createCluster(values.name, values.kube_config_path);
+      const result = editing
+        ? await updateCluster(editing.name, payload)
+        : await createCluster(payload);
       message.success(result.message);
       if (result.warnings?.length) {
         notification.warning({
@@ -68,12 +145,14 @@ const ClusterManagePage: React.FC = () => {
           description: result.warnings.join('；'),
         });
       }
-      form.resetFields();
-      setAddOpen(false);
+      if (editing && cluster === editing.name && editing.name !== payload.name) {
+        setCluster(payload.name);
+      }
+      setOpen(false);
       invalidateClusters();
       await load();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '添加集群失败');
+      message.error(error instanceof Error ? error.message : '保存集群失败');
     } finally {
       setSubmitting(false);
     }
@@ -111,12 +190,23 @@ const ClusterManagePage: React.FC = () => {
       ),
     },
     {
-      title: 'KubeConfig 路径',
-      dataIndex: 'kube_config',
+      title: '认证方式',
+      dataIndex: 'auth_type',
+      width: 130,
+      render: (_, record) =>
+        record.auth_type === 'token' ? (
+          <Tag color="purple">Token</Tag>
+        ) : (
+          <Tag color="blue">KubeConfig</Tag>
+        ),
+    },
+    {
+      title: '连接信息',
+      dataIndex: 'server',
       ellipsis: true,
       render: (_, record) => (
         <Typography.Text copyable style={{ fontSize: 12 }}>
-          {record.kube_config || '-'}
+          {record.server || record.kube_config || '-'}
         </Typography.Text>
       ),
     },
@@ -142,19 +232,30 @@ const ClusterManagePage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 100,
-      render: (_, record) => [
-        <Tooltip key="delete" title="移除集群">
-          <Button
-            type="text"
-            danger
-            size="small"
-            aria-label="移除集群"
-            icon={<DeleteOutlined />}
-            onClick={() => handleRemove(record)}
-          />
-        </Tooltip>,
-      ],
+      width: 110,
+      render: (_, record) => (
+        <Space size={0}>
+          <Tooltip title="编辑集群配置">
+            <Button
+              type="text"
+              size="small"
+              aria-label="编辑集群"
+              icon={<EditOutlined />}
+              onClick={() => void openEdit(record)}
+            />
+          </Tooltip>
+          <Tooltip title="移除集群">
+            <Button
+              type="text"
+              danger
+              size="small"
+              aria-label="移除集群"
+              icon={<DeleteOutlined />}
+              onClick={() => handleRemove(record)}
+            />
+          </Tooltip>
+        </Space>
+      ),
     },
   ];
 
@@ -162,7 +263,7 @@ const ClusterManagePage: React.FC = () => {
     <PageContainer
       ghost
       title="集群管理"
-      subTitle="运行时添加或移除集群，配置会尽量写回后端 config.yaml"
+      subTitle="支持 KubeConfig 与 Token 两种认证方式，配置会写回后端 config.yaml"
       header={{ breadcrumb: {} }}
       extra={[
         <Button
@@ -176,15 +277,11 @@ const ClusterManagePage: React.FC = () => {
       ]}
     >
       <Space style={{ marginBottom: 12 }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setAddOpen(true)}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           添加集群
         </Button>
         <Typography.Text type="secondary">
-          添加时会校验 kubeconfig 并尝试连接集群。
+          添加时会校验认证信息并尝试连接集群。
         </Typography.Text>
       </Space>
 
@@ -196,19 +293,19 @@ const ClusterManagePage: React.FC = () => {
         pagination={false}
         size="middle"
         scroll={{ x: 'max-content' }}
-        locale={{ emptyText: '暂无集群，请添加 kubeconfig 后使用' }}
+        locale={{ emptyText: '暂无集群，请添加 kubeconfig 或 Token 后使用' }}
       />
 
       <Modal
-        open={addOpen}
-        title="添加集群"
-        okText="添加"
+        open={open}
+        title={editing ? `编辑集群 · ${editing.name}` : '添加集群'}
+        okText={editing ? '保存' : '添加'}
         cancelText="取消"
         confirmLoading={submitting}
-        onOk={() => void handleAdd()}
-        onCancel={() => setAddOpen(false)}
+        onOk={() => void handleSubmit()}
+        onCancel={() => setOpen(false)}
         destroyOnHidden
-        width={560}
+        width={640}
       >
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item
@@ -219,14 +316,103 @@ const ClusterManagePage: React.FC = () => {
           >
             <Input placeholder="prod-cluster" />
           </Form.Item>
+
           <Form.Item
-            name="kube_config_path"
-            label="KubeConfig 路径"
-            tooltip="后端服务器上的绝对路径，例如 /root/.kube/prod-config"
-            rules={[{ required: true, message: '请输入 kubeconfig 路径' }]}
+            name="auth_type"
+            label="认证方式"
+            rules={[{ required: true }]}
           >
-            <Input placeholder="/root/.kube/config" />
+            <Radio.Group
+              onChange={(event) => setAuthType(event.target.value)}
+              options={[
+                { label: 'KubeConfig', value: 'kubeconfig' },
+                { label: 'API Server + Token', value: 'token' },
+              ]}
+            />
           </Form.Item>
+
+          {authType === 'kubeconfig' ? (
+            <>
+              <Form.Item name="kube_source" label="来源">
+                <Radio.Group
+                  onChange={(event) => setKubeSource(event.target.value)}
+                  options={[
+                    { label: '文件路径', value: 'path' },
+                    { label: '粘贴内容', value: 'content' },
+                  ]}
+                />
+              </Form.Item>
+              {kubeSource === 'path' ? (
+                <Form.Item
+                  name="kube_config_path"
+                  label="KubeConfig 路径"
+                  tooltip="后端服务器上的绝对路径"
+                  rules={[{ required: true, message: '请输入 kubeconfig 路径' }]}
+                >
+                  <Input placeholder="/root/.kube/config" />
+                </Form.Item>
+              ) : (
+                <Form.Item
+                  name="kube_config_content"
+                  label="KubeConfig 内容"
+                  rules={[{ required: true, message: '请粘贴 kubeconfig 内容' }]}
+                >
+                  <Input.TextArea
+                    rows={8}
+                    className="kr-code"
+                    placeholder="apiVersion: v1&#10;kind: Config&#10;clusters: ..."
+                  />
+                </Form.Item>
+              )}
+            </>
+          ) : (
+            <>
+              <Form.Item
+                name="server"
+                label="API Server"
+                tooltip="例如 https://10.0.0.1:6443"
+                rules={[{ required: true, message: '请输入 API Server 地址' }]}
+              >
+                <Input placeholder="https://10.0.0.1:6443" />
+              </Form.Item>
+              <Form.Item
+                name="token"
+                label="Bearer Token"
+                tooltip="ServiceAccount Token；出于安全考虑，编辑时需重新填写"
+                rules={[{ required: true, message: '请输入 Token' }]}
+              >
+                <Input.Password placeholder="eyJhbGciOiJSUzI1NiIs..." />
+              </Form.Item>
+              <Form.Item
+                name="skip_tls_verify"
+                label="跳过 TLS 校验"
+                valuePropName="checked"
+              >
+                <Switch />
+              </Form.Item>
+              <Form.Item
+                noStyle
+                shouldUpdate={(prev, next) =>
+                  prev.skip_tls_verify !== next.skip_tls_verify
+                }
+              >
+                {({ getFieldValue }) => (
+                  <Form.Item
+                    name="ca_data"
+                    label="CA 证书（PEM，可选）"
+                    tooltip="填写后用于校验 API Server 证书"
+                  >
+                    <Input.TextArea
+                      rows={6}
+                      className="kr-code"
+                      disabled={Boolean(getFieldValue('skip_tls_verify'))}
+                      placeholder="-----BEGIN CERTIFICATE-----"
+                    />
+                  </Form.Item>
+                )}
+              </Form.Item>
+            </>
+          )}
         </Form>
       </Modal>
     </PageContainer>
