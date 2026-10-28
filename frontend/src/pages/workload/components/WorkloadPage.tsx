@@ -66,7 +66,7 @@ const WorkloadPage: React.FC<WorkloadPageProps> = ({
   restartable = true,
   extraColumns = [],
 }) => {
-  const { cluster, namespace } = useModel('app') as AppModel;
+  const { cluster, namespace, setNamespace } = useModel('app') as AppModel;
   const { message, modal } = App.useApp();
   const [scaleTarget, setScaleTarget] = useState<ScaleTarget>();
 
@@ -122,11 +122,26 @@ const WorkloadPage: React.FC<WorkloadPageProps> = ({
                 size="small"
                 aria-label="查看 Pod"
                 icon={<DeploymentUnitOutlined />}
-                onClick={() =>
-                  history.push('/workload/pod', {
-                    filter_name: record.metadata.name,
-                  })
-                }
+                onClick={() => {
+                  const matchLabels = (record.spec?.selector?.matchLabels ??
+                    {}) as Record<string, string>;
+                  const selector = Object.entries(matchLabels)
+                    .map(([key, value]) => `${key}=${value}`)
+                    .join(',');
+                  if (
+                    record.metadata.namespace &&
+                    record.metadata.namespace !== namespace
+                  ) {
+                    setNamespace(record.metadata.namespace);
+                  }
+                  const search = new URLSearchParams();
+                  if (selector) {
+                    search.set('label_selector', selector);
+                  } else {
+                    search.set('filter_name', record.metadata.name);
+                  }
+                  history.push(`/workload/pod?${search.toString()}`);
+                }}
               />
             </Tooltip>,
           ];

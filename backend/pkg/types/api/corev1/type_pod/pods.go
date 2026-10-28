@@ -18,8 +18,10 @@ var Pod pod
 
 type pod struct{}
 
-func (p *pod) GetPods(client *kubernetes.Clientset, filterName, namespace string, limit, page int) (podsResp *PodsResp, err error) {
-	podList, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
+func (p *pod) GetPods(client *kubernetes.Clientset, filterName, labelSelector, namespace string, limit, page int) (podsResp *PodsResp, err error) {
+	podList, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("获取Pod列表失败: %v", err))
 	}

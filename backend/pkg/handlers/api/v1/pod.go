@@ -25,11 +25,12 @@ func (p *pod) Register(router *gin.Engine) {
 
 func (p *pod) GetPodList(ctx *gin.Context) {
 	params := new(struct {
-		FilterName string `form:"filter_name" json:"filter_name"`
-		Namespace  string `form:"namespace" json:"namespace"`
-		Page       int    `form:"page" json:"page"`
-		Limit      int    `form:"limit" json:"limit"`
-		Cluster    string `form:"cluster" json:"cluster"`
+		FilterName    string `form:"filter_name" json:"filter_name"`
+		LabelSelector string `form:"label_selector" json:"label_selector"`
+		Namespace     string `form:"namespace" json:"namespace"`
+		Page          int    `form:"page" json:"page"`
+		Limit         int    `form:"limit" json:"limit"`
+		Cluster       string `form:"cluster" json:"cluster"`
 	})
 
 	if err := ctx.Bind(params); err != nil {
@@ -49,7 +50,7 @@ func (p *pod) GetPodList(ctx *gin.Context) {
 		return
 	}
 
-	podsResp, err := type_pod.Pod.GetPods(client, params.FilterName, params.Namespace, params.Limit, params.Page)
+	podsResp, err := type_pod.Pod.GetPods(client, params.FilterName, params.LabelSelector, params.Namespace, params.Limit, params.Page)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),

@@ -64,7 +64,7 @@ const columns: ProColumns<KubeAPI.KubeObject>[] = [
         <Tooltip title={`查看节点 ${nodeName}`}>
           <Typography.Link
             onClick={() =>
-              history.push('/cluster/node', { filter_name: nodeName })
+              history.push(`/cluster/node?filter_name=${encodeURIComponent(nodeName)}`)
             }
           >
             {nodeName}

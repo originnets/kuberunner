@@ -106,6 +106,14 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
     [],
   );
 
+  // 支持 /workload/pod?label_selector=app%3Dorders 深链（工作负载的“查看 Pod”）
+  const initialLabelSelector = useMemo(
+    () =>
+      new URLSearchParams(history.location.search).get('label_selector') ?? '',
+    [],
+  );
+  const [labelSelector, setLabelSelector] = useState(initialLabelSelector);
+
   const reload = () => tableRef.current?.reload();
 
   useEffect(() => {
@@ -349,6 +357,29 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
           style={{ marginBottom: 16 }}
         />
       ) : null}
+      {labelSelector ? (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          title={`已按标签筛选：${labelSelector}`}
+          action={
+            <Button
+              size="small"
+              onClick={() => {
+                setLabelSelector('');
+                history.replace({
+                  pathname: history.location.pathname,
+                  search: '',
+                });
+                reload();
+              }}
+            >
+              清除筛选
+            </Button>
+          }
+        />
+      ) : null}
       {error ? (
         <Alert
           type="error"
@@ -367,7 +398,7 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
         }
         headerTitle={false}
         columns={allColumns}
-        params={{ cluster, namespace }}
+        params={{ cluster, namespace, label_selector: labelSelector }}
         form={
           initialFilter ? { initialValues: { name: initialFilter } } : undefined
         }
@@ -383,6 +414,7 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
               filter_name:
                 (params.filter_name as string | undefined) ??
                 (params.name as string | undefined),
+              label_selector: labelSelector || undefined,
               page: params.current,
               limit: params.pageSize,
             });

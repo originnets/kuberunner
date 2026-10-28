@@ -103,6 +103,7 @@ export interface ListParams {
   cluster: string;
   namespace?: string;
   filter_name?: string;
+  label_selector?: string;
   page?: number;
   limit?: number;
 }
@@ -153,6 +154,7 @@ export async function listResource<T = KubeAPI.KubeObject>(
         cluster: params.cluster,
         namespace: resource.namespaced ? params.namespace : undefined,
         filter_name: params.filter_name,
+        label_selector: params.label_selector,
         page: params.page ?? 1,
         limit: params.limit ?? 10,
       },
