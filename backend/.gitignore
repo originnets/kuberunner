@@ -1,0 +1,6 @@
+# 运行时生成的集群 kubeconfig（包含凭据，不要提交）
+kubeconfigs/
+
+# 编译产物
+*.exe
+kuberunner
