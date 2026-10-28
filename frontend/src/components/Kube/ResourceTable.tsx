@@ -26,12 +26,20 @@ import {
 import ContextBar from './ContextSwitches';
 import CreateResourceDrawer from './create/CreateResourceDrawer';
 import type { CreateKind } from './create/templates';
+import { CREATE_KINDS } from './create/templates';
 import { age, formatTime } from './helpers';
 import ResourceDrawer from './ResourceDrawer';
 
 type RowContext = {
   reload: () => void;
-  openDetail: (edit?: boolean) => void;
+  openDetail: (mode?: 'detail' | 'edit') => void;
+};
+
+const CREATE_KIND_MAP: Record<string, CreateKind> = {
+  pvc: 'pvc',
+  pv: 'pv',
+  persistentvolumeclaim: 'pvc',
+  persistentvolume: 'pv',
 };
 
 export interface ResourceTableProps {
@@ -87,7 +95,7 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
     open: boolean;
     name?: string;
     namespace?: string;
-    edit?: boolean;
+    mode?: 'detail' | 'edit';
     fallback?: KubeAPI.KubeObject;
   }>({ open: false });
 
@@ -245,17 +253,33 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
       align: 'right',
       render: (_, record) => {
         const moreItems = [];
-        if (resource.update) {
+        if (!hideDetail) {
           moreItems.push({
-            key: 'edit',
-            icon: <EditOutlined />,
-            label: '编辑 YAML',
+            key: 'detail',
+            icon: <EyeOutlined />,
+            label: '详情',
             onClick: () =>
               setDrawer({
                 open: true,
                 name: record.metadata.name,
                 namespace: record.metadata.namespace,
-                edit: true,
+                mode: 'detail',
+                fallback: record,
+              }),
+          });
+        }
+        const formKind = CREATE_KIND_MAP[resource.id] ?? (resource.id as CreateKind);
+        if (resource.update && CREATE_KINDS[formKind]) {
+          moreItems.push({
+            key: 'edit',
+            icon: <EditOutlined />,
+            label: '编辑',
+            onClick: () =>
+              setDrawer({
+                open: true,
+                name: record.metadata.name,
+                namespace: record.metadata.namespace,
+                mode: 'edit',
                 fallback: record,
               }),
           });
@@ -274,33 +298,15 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
           <Space size={0}>
             {rowActions?.(record, {
               reload,
-              openDetail: (edit = false) =>
+              openDetail: (mode = 'detail') =>
                 setDrawer({
                   open: true,
                   name: record.metadata.name,
                   namespace: record.metadata.namespace,
-                  edit,
+                  mode,
                   fallback: record,
                 }),
             })}
-            {hideDetail ? null : (
-              <Tooltip title="详情 / YAML">
-                <Button
-                  type="text"
-                  size="small"
-                  aria-label="详情"
-                  icon={<EyeOutlined />}
-                  onClick={() =>
-                    setDrawer({
-                      open: true,
-                      name: record.metadata.name,
-                      namespace: record.metadata.namespace,
-                      fallback: record,
-                    })
-                  }
-                />
-              </Tooltip>
-            )}
             {moreItems.length ? (
               <Dropdown menu={{ items: moreItems }} trigger={['click']}>
                 <Button
@@ -458,16 +464,29 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
       ) : null}
 
       <ResourceDrawer
-        open={drawer.open}
+        open={drawer.open && drawer.mode !== 'edit'}
         cluster={cluster}
         resource={resource}
         name={drawer.name}
         namespace={drawer.namespace ?? namespace}
         fallback={drawer.fallback}
-        initialEdit={drawer.edit}
         onClose={() => setDrawer({ open: false })}
-        onSaved={reload}
       />
+
+      {drawer.mode === 'edit' && drawer.fallback ? (
+        <CreateResourceDrawer
+          open={drawer.open}
+          kind={
+            CREATE_KIND_MAP[resource.id] ?? (resource.id as CreateKind)
+          }
+          cluster={cluster}
+          namespace={drawer.namespace ?? namespace}
+          mode="edit"
+          record={drawer.fallback}
+          onClose={() => setDrawer({ open: false })}
+          onSaved={reload}
+        />
+      ) : null}
 
       {createKey ? (
         <CreateResourceDrawer

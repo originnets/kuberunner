@@ -1,27 +1,31 @@
 import {
   CopyOutlined,
   DownloadOutlined,
-  EditOutlined,
   ReloadOutlined,
-  SaveOutlined,
 } from '@ant-design/icons';
-import { Alert, App, Button, Descriptions, Drawer, Empty, Input, Space, Spin, Tabs, Tag } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Descriptions,
+  Drawer,
+  Empty,
+  Space,
+  Spin,
+  Tabs,
+  Tag,
+} from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   getResourceDetail,
   type ResourceEndpoint,
-  updateResource,
 } from '@/services/kuberunner';
 import {
   copyText,
   downloadFile,
   formatTime,
-  fromYaml,
   toYaml,
 } from './helpers';
-import type { CreateKind } from './create/templates';
-import { CREATE_KINDS } from './create/templates';
-import CreateResourceDrawer from './create/CreateResourceDrawer';
 
 export interface ResourceDrawerProps {
   open: boolean;
@@ -32,11 +36,8 @@ export interface ResourceDrawerProps {
   namespace?: string;
   /** 行内数据，打开抽屉时先展示，避免等待接口时空白 */
   fallback?: KubeAPI.KubeObject;
-  initialEdit?: boolean;
   onClose: () => void;
-  onSaved?: () => void;
 }
-
 
 const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
   open,
@@ -45,26 +46,12 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
   name,
   namespace,
   fallback,
-  initialEdit = false,
   onClose,
-  onSaved,
 }) => {
   const { message } = App.useApp();
   const [detail, setDetail] = useState<KubeAPI.KubeObject | undefined>(fallback);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
-  const [editing, setEditing] = useState(initialEdit);
-  const [draft, setDraft] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [formEditOpen, setFormEditOpen] = useState(false);
-
-  const canEdit = Boolean(resource.update);
-  const formKind = (resource.id === 'persistentvolumeclaim'
-    ? 'pvc'
-    : resource.id === 'persistentvolume'
-      ? 'pv'
-      : resource.id) as CreateKind;
-  const canFormEdit = canEdit && Boolean(CREATE_KINDS[formKind]);
 
   const load = async () => {
     if (!name) return;
@@ -91,54 +78,12 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
   useEffect(() => {
     if (!open) return;
     setDetail(fallback);
-    setEditing(initialEdit);
     setError(undefined);
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, name, namespace, cluster, initialEdit]);
+  }, [open, name, namespace, cluster]);
 
-  const yaml = useMemo(
-    () => (detail ? toYaml(detail) : ''),
-    [detail],
-  );
-
-  useEffect(() => {
-    if (editing) setDraft(yaml);
-  }, [editing, yaml]);
-
-  const save = async () => {
-    if (!detail) return;
-    let parsed: KubeAPI.KubeObject;
-    try {
-      parsed = fromYaml(draft) as KubeAPI.KubeObject;
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : 'YAML 解析失败');
-      return;
-    }
-    if (!parsed?.metadata?.name) {
-      message.error('缺少 metadata.name，无法保存');
-      return;
-    }
-    // status 由集群维护，回传可能导致更新被拒绝。
-    delete parsed.status;
-
-    setSaving(true);
-    try {
-      await updateResource(resource, {
-        cluster,
-        namespace: parsed.metadata.namespace ?? namespace,
-        content: JSON.stringify(parsed),
-      });
-      message.success('保存成功');
-      setEditing(false);
-      await load();
-      onSaved?.();
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '保存失败');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const yaml = useMemo(() => (detail ? toYaml(detail) : ''), [detail]);
 
   const handleCopy = async () => {
     await copyText(yaml);
@@ -195,11 +140,11 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
     : [];
 
   return (
-    <>
     <Drawer
       open={open}
       onClose={onClose}
-      size={editing ? 860 : 720}
+      destroyOnHidden
+      size={760}
       title={
         <Space size={8} wrap>
           <span style={{ fontWeight: 600 }}>{name}</span>
@@ -218,52 +163,7 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
           <Button icon={<DownloadOutlined />} onClick={handleDownload} />
         </Space>
       }
-      footer={
-        canEdit ? (
-          <Space style={{ float: 'right' }}>
-            {editing ? (
-              <>
-                <Button onClick={() => setEditing(false)}>取消</Button>
-                <Button
-                  type="primary"
-                  icon={<SaveOutlined />}
-                  loading={saving}
-                  onClick={() => void save()}
-                >
-                  保存
-                </Button>
-              </>
-            ) : (
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => setFormEditOpen(true)}
-                  disabled={!detail || !canFormEdit}
-                >
-                  表单编辑
-                </Button>
-                <Button
-                  onClick={() => setEditing(true)}
-                  disabled={!detail}
-                >
-                  编辑 YAML
-                </Button>
-              </Space>
-            )}
-          </Space>
-        ) : null
-      }
     >
-      {editing ? (
-        <Alert
-          type="warning"
-          showIcon
-          title="正在编辑 YAML"
-          description="保存会直接覆盖集群中的对象（status 会被忽略）；建议先在本地备份。"
-          style={{ marginBottom: 16 }}
-        />
-      ) : null}
       {error ? (
         <Alert
           type="error"
@@ -280,22 +180,14 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
             items={[
               {
                 key: 'yaml',
-                label: editing ? '编辑 YAML' : 'YAML',
-                children: editing ? (
-                  <Input.TextArea
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    autoSize={{ minRows: 22, maxRows: 30 }}
-                    spellCheck={false}
-                    style={{
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                      fontSize: 13,
-                      lineHeight: 1.65,
-                    }}
-                  />
-                ) : (
-                  <pre className="kr-code" style={{ maxHeight: 'calc(100vh - 220px)' }}>{yaml}</pre>
+                label: 'YAML',
+                children: (
+                  <pre
+                    className="kr-code"
+                    style={{ maxHeight: 'calc(100vh - 200px)' }}
+                  >
+                    {yaml}
+                  </pre>
                 ),
               },
               {
@@ -317,22 +209,6 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
         )}
       </Spin>
     </Drawer>
-    {formEditOpen && detail ? (
-      <CreateResourceDrawer
-        open={formEditOpen}
-        kind={formKind}
-        cluster={cluster}
-        namespace={detail.metadata?.namespace}
-        mode="edit"
-        record={detail}
-        onClose={() => setFormEditOpen(false)}
-        onSaved={() => {
-          void load();
-          onSaved?.();
-        }}
-      />
-    ) : null}
-    </>
   );
 };
 

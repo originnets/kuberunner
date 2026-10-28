@@ -272,10 +272,12 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
           throw new Error('YAML 内容不能为空');
         }
         if (editing) {
+          const object = parsed as KubeAPI.KubeObject;
+          delete object.status;
           await updateResource(ENDPOINTS[kind], {
             cluster,
-            namespace: (parsed as KubeAPI.KubeObject).metadata?.namespace,
-            content: JSON.stringify(parsed),
+            namespace: object.metadata?.namespace,
+            content: JSON.stringify(object),
           });
           message.success('保存成功');
         } else {
@@ -287,6 +289,7 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
         const ctx = { cluster, namespace: namespace ?? '' };
         if (editing && record) {
           const object = mergeResource(kind, values, record, ctx);
+          delete object.status;
           await updateResource(ENDPOINTS[kind], {
             cluster,
             namespace: object.metadata?.namespace,
