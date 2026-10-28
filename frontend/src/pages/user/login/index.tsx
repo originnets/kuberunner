@@ -63,14 +63,16 @@ const FEATURES = [
 
 const useStyles = createStyles(({ token }) => ({
   page: {
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     minHeight: '100vh',
     padding: 24,
-    background:
-      'radial-gradient(60% 60% at 12% 8%, #e8f0ff 0%, transparent 60%), radial-gradient(50% 50% at 92% 92%, #eef2ff 0%, transparent 60%), #f7f9fc',
+    overflow: 'hidden',
   },
   shell: {
+    position: 'relative',
+    zIndex: 2,
     display: 'grid',
     gridTemplateColumns: '1fr',
     gap: 32,
@@ -99,7 +101,7 @@ const useStyles = createStyles(({ token }) => ({
     gap: 12,
     fontSize: 20,
     fontWeight: 600,
-    color: '#1f2937',
+    color: '#f8fafc',
     img: { width: 40, height: 40, borderRadius: 10 },
   },
   headline: {
@@ -108,17 +110,20 @@ const useStyles = createStyles(({ token }) => ({
     lineHeight: 1.25,
     fontWeight: 700,
     letterSpacing: '-0.01em',
-    color: '#0f172a',
+    color: '#f8fafc',
   },
   accent: {
-    color: '#2563eb',
+    background: 'linear-gradient(120deg, #93c5fd 0%, #c4b5fd 100%)',
+    WebkitBackgroundClip: 'text',
+    backgroundClip: 'text',
+    color: 'transparent',
   },
   lead: {
     margin: 0,
     maxWidth: 440,
     fontSize: 15,
     lineHeight: 1.8,
-    color: '#64748b',
+    color: 'rgba(203, 213, 225, 0.82)',
   },
   features: {
     display: 'flex',
@@ -143,21 +148,23 @@ const useStyles = createStyles(({ token }) => ({
     marginTop: 1,
     borderRadius: 10,
     fontSize: 16,
-    color: '#2563eb',
-    background: '#eef4ff',
+    color: '#93c5fd',
+    background: 'rgba(59, 130, 246, 0.16)',
   },
   featureTitle: {
     fontSize: 14,
     fontWeight: 600,
     lineHeight: 1.5,
-    color: '#1e293b',
+    color: '#e2e8f0',
   },
   featureDesc: {
     fontSize: 12.5,
     lineHeight: 1.6,
-    color: '#94a3b8',
+    color: 'rgba(148, 163, 184, 0.9)',
   },
   card: {
+    position: 'relative',
+    zIndex: 2,
     width: '100%',
     padding: '36px 32px 24px',
     background: '#ffffff',
@@ -209,10 +216,12 @@ const useStyles = createStyles(({ token }) => ({
     color: '#94a3b8',
   },
   footer: {
+    position: 'relative',
+    zIndex: 2,
     padding: '12px 0 4px',
     textAlign: 'center',
     fontSize: 12,
-    color: '#94a3b8',
+    color: 'rgba(148, 163, 184, 0.65)',
   },
 }));
 
@@ -272,7 +281,11 @@ const Login: React.FC = () => {
         <title>登录 - {Settings.title}</title>
       </Helmet>
 
-      <div className={styles.page}>
+      <div className={`kr-login-page ${styles.page}`}>
+        <div className="kr-login-grid" />
+        <div className="kr-orb kr-orb-blue" />
+        <div className="kr-orb kr-orb-purple" />
+
         <div className={styles.shell}>
           <section className={styles.brand}>
             <div className={styles.logoRow}>
