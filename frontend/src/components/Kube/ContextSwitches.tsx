@@ -31,10 +31,14 @@ const ClusterSelect: React.FC = () => {
   const { clusters, loading } = useClusters();
 
   useEffect(() => {
-    if (!cluster && clusters.length) {
+    // 集群列表加载完成后再校验本地记忆的集群，避免使用已不存在的集群
+    //（例如切换了后端配置、或浏览器里残留了旧集群名）。
+    if (loading) return;
+    if (!clusters.length) return;
+    if (!cluster || !clusters.includes(cluster)) {
       setCluster(clusters[0]);
     }
-  }, [cluster, clusters, setCluster]);
+  }, [cluster, clusters, loading, setCluster]);
 
   return (
     <Select
@@ -92,6 +96,14 @@ const NamespaceSelect: React.FC = () => {
       alive = false;
     };
   }, [cluster]);
+
+  useEffect(() => {
+    // 命名空间列表到位后校验本地记忆值，避免使用已不存在的命名空间。
+    if (loading) return;
+    if (namespace && !namespaces.includes(namespace)) {
+      setNamespace('');
+    }
+  }, [namespace, namespaces, loading, setNamespace]);
 
   return (
     <Select

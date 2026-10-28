@@ -34,3 +34,15 @@ RequestTimeout: 30s
 `/ws?...&token=<token>` 传递。`POST /logout` 可立即注销令牌。
 集群也可以运行时增删：`POST /api/v1/k8s/cluster/create`（name + kube_config_path）、
 `DELETE /api/v1/k8s/cluster/delete`，配置会尽量写回本文件。
+## 配置文件查找顺序
+
+后端会依次尝试以下位置，找到即用：
+
+1. 环境变量 `KUBERUNNER_CONFIG` 指定的绝对路径
+2. 当前工作目录下的 `config.yaml`
+3. 当前工作目录下的 `backend/config.yaml`（在仓库根目录执行 `go run ./backend/cmd` 时）
+4. 可执行文件所在目录或上一级目录下的 `config.yaml`
+
+因此无论是 `cd backend && go run ./cmd`，还是在仓库根目录直接启动二进制，都能正确加载配置。
+启动日志会打印实际使用的配置文件路径与加载到的集群数量；若 kubeconfig 路径不存在，会逐条输出告警。
+运行期通过集群管理页面新增/移除集群会写回该配置文件（保留其它配置与注释）。

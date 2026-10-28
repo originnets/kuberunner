@@ -62,6 +62,10 @@ func (k *k8s) Init() error {
 		kubeConfMap[key] = value
 	}
 
+	fmt.Printf("使用配置文件: %s，待加载集群 %d 个\n", config.GetConfigFile(), len(kubeConfMap))
+	if len(kubeConfMap) == 0 {
+		return fmt.Errorf("配置文件 %s 中没有 KubeConfigs，请添加集群配置或通过集群管理页面添加", config.GetConfigFile())
+	}
 	clientMap := make(map[string]*kubernetes.Clientset, len(kubeConfMap))
 	var failures []error
 
@@ -82,7 +86,7 @@ func (k *k8s) Init() error {
 		}
 
 		clientMap[key] = clientSet
-		fmt.Printf("集群%s：创建K8s客户端成功\n", key)
+		fmt.Printf("集群 %s：创建 K8s 客户端成功（kubeconfig: %s）\n", key, value)
 	}
 
 	k.mu.Lock()

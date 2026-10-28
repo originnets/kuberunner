@@ -3,6 +3,6 @@ Username: "admin"
 Password: "admin"
 # 每个集群对应一个 kubeconfig 文件路径，key 为集群名称
 KubeConfigs:
-  cluster1: "C:/Users/Administrator/Desktop/k3s.yaml"
+  cluster1: "C:\\Users\\Administrator\\Desktop\\k3s.yaml"
 # 单次 Kubernetes API 请求超时时间，默认 30s
 RequestTimeout: 30s
