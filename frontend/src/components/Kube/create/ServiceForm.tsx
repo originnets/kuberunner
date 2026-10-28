@@ -17,9 +17,12 @@ const PROTOCOLS = ['TCP', 'UDP', 'SCTP'].map((value) => ({
   value,
 }));
 
-const ServiceForm: React.FC<{ namespace?: string }> = ({ namespace }) => (
+const ServiceForm: React.FC<{
+  namespace?: string;
+  editing?: boolean;
+}> = ({ namespace, editing }) => (
   <>
-    <NameAndNamespace namespace={namespace} />
+    <NameAndNamespace namespace={namespace} editing={editing} />
     <Row gutter={12}>
       <Col span={6}>
         <Form.Item name="type" label="类型">
@@ -35,9 +38,9 @@ const ServiceForm: React.FC<{ namespace?: string }> = ({ namespace }) => (
         <Form.Item
           name="clusterIP"
           label="ClusterIP"
-          tooltip="填写 None 可创建 Headless Service"
+          tooltip="创建后不可修改；填写 None 可创建 Headless Service"
         >
-          <Input placeholder="自动分配" />
+          <Input placeholder="自动分配" disabled={editing} />
         </Form.Item>
       </Col>
       <Col span={6}>

@@ -1,8 +1,22 @@
 import { CodeOutlined, FormOutlined, ReloadOutlined } from '@ant-design/icons';
-import { App, Alert, Button, Drawer, Form, Input, Space, Tabs, Typography } from 'antd';
+import {
+  App,
+  Alert,
+  Button,
+  Drawer,
+  Form,
+  Input,
+  Space,
+  Tabs,
+  Typography,
+} from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { applyResource } from '@/services/kuberunner';
-import { fromYaml } from '../helpers';
+import {
+  applyResource,
+  ENDPOINTS,
+  updateResource,
+} from '@/services/kuberunner';
+import { fromYaml, toYaml } from '../helpers';
 import type { CreateContext, WorkloadKind } from './builders';
 import {
   buildConfigMap,
@@ -17,6 +31,7 @@ import {
   buildWorkload,
 } from './builders';
 import { ConfigMapForm, SecretForm } from './DataForms';
+import { mergeResource, toFormValues } from './editHelpers';
 import IngressForm from './IngressForm';
 import ServiceForm from './ServiceForm';
 import {
@@ -34,8 +49,12 @@ export interface CreateResourceDrawerProps {
   kind: CreateKind;
   cluster: string;
   namespace?: string;
+  /** 编辑模式：回填已有资源并走更新接口 */
+  mode?: 'create' | 'edit';
+  record?: KubeAPI.KubeObject;
   onClose: () => void;
   onCreated?: () => void;
+  onSaved?: () => void;
 }
 
 type Builder = (
@@ -119,7 +138,10 @@ function defaultValues(
         ...ns,
         ingressClassName: 'nginx',
         hosts: [
-          { host: '', paths: [{ path: '/', pathType: 'Prefix', servicePort: 80 }] },
+          {
+            host: '',
+            paths: [{ path: '/', pathType: 'Prefix', servicePort: 80 }],
+          },
         ],
       };
     case 'configmap':
@@ -160,31 +182,38 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
   kind,
   cluster,
   namespace,
+  mode = 'create',
+  record,
   onClose,
   onCreated,
+  onSaved,
 }) => {
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const [mode, setMode] = useState<'form' | 'yaml'>('form');
+  const [tab, setTab] = useState<'form' | 'yaml'>('form');
   const [yamlText, setYamlText] = useState('');
   const [error, setError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
 
+  const editing = mode === 'edit' && Boolean(record);
   const meta = CREATE_KINDS[kind];
 
   const initialValues = useMemo(
-    () => defaultValues(kind, namespace ?? ''),
-    [kind, namespace],
+    () =>
+      editing && record
+        ? toFormValues(kind, record)
+        : defaultValues(kind, namespace ?? ''),
+    [editing, record, kind, namespace],
   );
 
   const template = useMemo(
-    () => buildTemplate(kind, namespace),
-    [kind, namespace],
+    () => (editing && record ? toYaml(record) : buildTemplate(kind, namespace)),
+    [editing, record, kind, namespace],
   );
 
   useEffect(() => {
     if (!open) return;
-    setMode('form');
+    setTab('form');
     setError(undefined);
     setYamlText(template);
     form.resetFields();
@@ -209,24 +238,25 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
                     : 'Pod') as WorkloadKind | 'Pod'
             }
             namespace={namespace}
+            editing={editing}
           />
         );
       case 'service':
-        return <ServiceForm namespace={namespace} />;
+        return <ServiceForm namespace={namespace} editing={editing} />;
       case 'configmap':
-        return <ConfigMapForm namespace={namespace} />;
+        return <ConfigMapForm namespace={namespace} editing={editing} />;
       case 'secret':
-        return <SecretForm namespace={namespace} />;
+        return <SecretForm namespace={namespace} editing={editing} />;
       case 'pvc':
-        return <PvcForm namespace={namespace} />;
+        return <PvcForm namespace={namespace} editing={editing} />;
       case 'namespace':
-        return <NamespaceForm />;
+        return <NamespaceForm editing={editing} />;
       case 'ingress':
-        return <IngressForm namespace={namespace} />;
+        return <IngressForm namespace={namespace} editing={editing} />;
       case 'pv':
-        return <PvForm />;
+        return <PvForm editing={editing} />;
       case 'storageclass':
-        return <StorageClassForm />;
+        return <StorageClassForm editing={editing} />;
       default:
         return null;
     }
@@ -236,24 +266,44 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
     setError(undefined);
     setSubmitting(true);
     try {
-      if (mode === 'yaml') {
+      if (tab === 'yaml') {
         const parsed = fromYaml(yamlText);
         if (!parsed || typeof parsed !== 'object') {
           throw new Error('YAML 内容不能为空');
         }
-        const result = await applyResource(cluster, JSON.stringify(parsed));
-        message.success(result || '创建成功');
+        if (editing) {
+          await updateResource(ENDPOINTS[kind], {
+            cluster,
+            namespace: (parsed as KubeAPI.KubeObject).metadata?.namespace,
+            content: JSON.stringify(parsed),
+          });
+          message.success('保存成功');
+        } else {
+          const result = await applyResource(cluster, JSON.stringify(parsed));
+          message.success(result || '创建成功');
+        }
       } else {
         const values = await form.validateFields();
-        const builder = BUILDERS[kind];
-        const object = builder(values, {
-          cluster,
-          namespace: namespace ?? '',
-        });
-        const result = await applyResource(cluster, JSON.stringify(object));
-        message.success(result || '创建成功');
+        const ctx = { cluster, namespace: namespace ?? '' };
+        if (editing && record) {
+          const object = mergeResource(kind, values, record, ctx);
+          await updateResource(ENDPOINTS[kind], {
+            cluster,
+            namespace: object.metadata?.namespace,
+            content: JSON.stringify(object),
+          });
+          message.success('保存成功');
+        } else {
+          const object = BUILDERS[kind](values, ctx);
+          const result = await applyResource(cluster, JSON.stringify(object));
+          message.success(result || '创建成功');
+        }
       }
-      onCreated?.();
+      if (editing) {
+        onSaved?.();
+      } else {
+        onCreated?.();
+      }
       onClose();
     } catch (err) {
       // 表单校验失败不展示为接口错误
@@ -271,13 +321,17 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
       open={open}
       onClose={onClose}
       size={920}
-      title={`新建 ${meta?.title ?? '资源'}`}
+      title={`${editing ? '编辑' : '新建'} ${meta?.title ?? '资源'}`}
       destroyOnHidden
       footer={
         <Space style={{ float: 'right' }}>
           <Button onClick={onClose}>取消</Button>
-          <Button type="primary" loading={submitting} onClick={() => void submit()}>
-            创建
+          <Button
+            type="primary"
+            loading={submitting}
+            onClick={() => void submit()}
+          >
+            {editing ? '保存' : '创建'}
           </Button>
         </Space>
       }
@@ -290,22 +344,24 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
             <Alert
               type="error"
               showIcon
-              title="创建失败"
-              description={<pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{error}</pre>}
+              title={editing ? '保存失败' : '创建失败'}
+              description={
+                <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{error}</pre>
+              }
               style={{ marginBottom: 16 }}
             />
           ) : null}
 
           <Tabs
-            activeKey={mode}
-            onChange={(key) => setMode(key as 'form' | 'yaml')}
+            activeKey={tab}
+            onChange={(key) => setTab(key as 'form' | 'yaml')}
             items={[
               {
                 key: 'form',
                 label: (
                   <Space size={6}>
                     <FormOutlined />
-                    表单创建
+                    {editing ? '表单编辑' : '表单创建'}
                   </Space>
                 ),
                 children: (
@@ -324,7 +380,7 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
                 label: (
                   <Space size={6}>
                     <CodeOutlined />
-                    YAML 创建
+                    {editing ? 'YAML 编辑' : 'YAML 创建'}
                   </Space>
                 ),
                 children: (

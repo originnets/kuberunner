@@ -19,6 +19,9 @@ import {
   fromYaml,
   toYaml,
 } from './helpers';
+import type { CreateKind } from './create/templates';
+import { CREATE_KINDS } from './create/templates';
+import CreateResourceDrawer from './create/CreateResourceDrawer';
 
 export interface ResourceDrawerProps {
   open: boolean;
@@ -53,8 +56,15 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
   const [editing, setEditing] = useState(initialEdit);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const [formEditOpen, setFormEditOpen] = useState(false);
 
   const canEdit = Boolean(resource.update);
+  const formKind = (resource.id === 'persistentvolumeclaim'
+    ? 'pvc'
+    : resource.id === 'persistentvolume'
+      ? 'pv'
+      : resource.id) as CreateKind;
+  const canFormEdit = canEdit && Boolean(CREATE_KINDS[formKind]);
 
   const load = async () => {
     if (!name) return;
@@ -185,6 +195,7 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
     : [];
 
   return (
+    <>
     <Drawer
       open={open}
       onClose={onClose}
@@ -223,13 +234,22 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
                 </Button>
               </>
             ) : (
-              <Button
-                icon={<EditOutlined />}
-                onClick={() => setEditing(true)}
-                disabled={!detail}
-              >
-                编辑 YAML
-              </Button>
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  onClick={() => setFormEditOpen(true)}
+                  disabled={!detail || !canFormEdit}
+                >
+                  表单编辑
+                </Button>
+                <Button
+                  onClick={() => setEditing(true)}
+                  disabled={!detail}
+                >
+                  编辑 YAML
+                </Button>
+              </Space>
             )}
           </Space>
         ) : null
@@ -297,6 +317,22 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
         )}
       </Spin>
     </Drawer>
+    {formEditOpen && detail ? (
+      <CreateResourceDrawer
+        open={formEditOpen}
+        kind={formKind}
+        cluster={cluster}
+        namespace={detail.metadata?.namespace}
+        mode="edit"
+        record={detail}
+        onClose={() => setFormEditOpen(false)}
+        onSaved={() => {
+          void load();
+          onSaved?.();
+        }}
+      />
+    ) : null}
+    </>
   );
 };
 

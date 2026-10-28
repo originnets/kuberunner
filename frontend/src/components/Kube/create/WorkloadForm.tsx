@@ -439,9 +439,10 @@ const VolumeEditor: React.FC<{
 const WorkloadForm: React.FC<{
   kind: WorkloadKind | 'Pod';
   namespace?: string;
-}> = ({ kind, namespace }) => (
+  editing?: boolean;
+}> = ({ kind, namespace, editing }) => (
   <>
-    <NameAndNamespace namespace={namespace} />
+    <NameAndNamespace namespace={namespace} editing={editing} />
     <Row gutter={12}>
       {kind !== 'DaemonSet' && kind !== 'Pod' ? (
         <Col span={8}>

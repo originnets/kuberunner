@@ -17,9 +17,12 @@ const PATH_TYPES = ['Prefix', 'Exact', 'ImplementationSpecific'].map(
   (value) => ({ label: value, value }),
 );
 
-const IngressForm: React.FC<{ namespace?: string }> = ({ namespace }) => (
+const IngressForm: React.FC<{
+  namespace?: string;
+  editing?: boolean;
+}> = ({ namespace, editing }) => (
   <>
-    <NameAndNamespace namespace={namespace} />
+    <NameAndNamespace namespace={namespace} editing={editing} />
     <Row gutter={12}>
       <Col span={12}>
         <Form.Item

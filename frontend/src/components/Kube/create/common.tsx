@@ -18,7 +18,8 @@ export const SectionTitle: React.FC<{ children: React.ReactNode }> = ({
 export const NameAndNamespace: React.FC<{
   namespaced?: boolean;
   namespace?: string;
-}> = ({ namespaced = true, namespace }) => (
+  editing?: boolean;
+}> = ({ namespaced = true, namespace, editing = false }) => (
   <Row gutter={16}>
     <Col span={namespaced && !namespace ? 12 : 24}>
       <Form.Item
@@ -26,7 +27,7 @@ export const NameAndNamespace: React.FC<{
         label="名称"
         rules={[{ required: true, message: '请输入名称' }]}
       >
-        <Input placeholder="demo" autoComplete="off" />
+        <Input placeholder="demo" autoComplete="off" disabled={editing} />
       </Form.Item>
     </Col>
     {namespaced && !namespace ? (
@@ -36,7 +37,7 @@ export const NameAndNamespace: React.FC<{
           label="命名空间"
           rules={[{ required: true, message: '请输入命名空间' }]}
         >
-          <Input placeholder="default" autoComplete="off" />
+          <Input placeholder="default" autoComplete="off" disabled={editing} />
         </Form.Item>
       </Col>
     ) : null}

@@ -14,9 +14,12 @@ const ACCESS_MODES = [
   'ReadWriteOncePod',
 ].map((value) => ({ label: value, value }));
 
-export const PvcForm: React.FC<{ namespace?: string }> = ({ namespace }) => (
+export const PvcForm: React.FC<{
+  namespace?: string;
+  editing?: boolean;
+}> = ({ namespace, editing }) => (
   <>
-    <NameAndNamespace namespace={namespace} />
+    <NameAndNamespace namespace={namespace} editing={editing} />
     <Row gutter={12}>
       <Col span={10}>
         <Form.Item
@@ -39,9 +42,9 @@ export const PvcForm: React.FC<{ namespace?: string }> = ({ namespace }) => (
         <Form.Item
           name="storageClassName"
           label="StorageClass"
-          tooltip="留空使用默认 StorageClass"
+          tooltip="创建后不可修改；留空使用默认 StorageClass"
         >
-          <Input placeholder="standard" />
+          <Input placeholder="standard" disabled={editing} />
         </Form.Item>
       </Col>
     </Row>
@@ -70,9 +73,9 @@ export const PvcForm: React.FC<{ namespace?: string }> = ({ namespace }) => (
   </>
 );
 
-export const NamespaceForm: React.FC = () => (
+export const NamespaceForm: React.FC<{ editing?: boolean }> = ({ editing }) => (
   <>
-    <NameAndNamespace namespaced={false} />
+    <NameAndNamespace namespaced={false} editing={editing} />
     <LabelsFields />
   </>
 );
@@ -86,13 +89,13 @@ const PV_TYPES = [
   { label: 'Ceph RBD', value: 'rbd' },
 ];
 
-export const PvForm: React.FC = () => {
+export const PvForm: React.FC<{ editing?: boolean }> = ({ editing }) => {
   const form = Form.useFormInstance();
   const volumeType = Form.useWatch('volumeType', form) ?? 'nfs';
 
   return (
     <>
-      <NameAndNamespace namespaced={false} />
+      <NameAndNamespace namespaced={false} editing={editing} />
       <Row gutter={12}>
         <Col span={8}>
           <Form.Item name="volumeType" label="存储类型">
@@ -329,9 +332,9 @@ export const PvForm: React.FC = () => {
   );
 };
 
-export const StorageClassForm: React.FC = () => (
+export const StorageClassForm: React.FC<{ editing?: boolean }> = ({ editing }) => (
   <>
-    <NameAndNamespace namespaced={false} />
+    <NameAndNamespace namespaced={false} editing={editing} />
     <Row gutter={12}>
       <Col span={10}>
         <Form.Item

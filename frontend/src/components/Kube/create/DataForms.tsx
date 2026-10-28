@@ -2,11 +2,12 @@ import { Col, Form, Row, Select } from 'antd';
 import React from 'react';
 import { KeyValueList, LabelsFields, NameAndNamespace, SectionTitle } from './common';
 
-export const ConfigMapForm: React.FC<{ namespace?: string }> = ({
-  namespace,
-}) => (
+export const ConfigMapForm: React.FC<{
+  namespace?: string;
+  editing?: boolean;
+}> = ({ namespace, editing }) => (
   <>
-    <NameAndNamespace namespace={namespace} />
+    <NameAndNamespace namespace={namespace} editing={editing} />
     <LabelsFields />
     <SectionTitle>配置项</SectionTitle>
     <KeyValueList
@@ -29,11 +30,12 @@ const SECRET_TYPES = [
   { label: 'SSH 密钥', value: 'kubernetes.io/ssh-auth' },
 ];
 
-export const SecretForm: React.FC<{ namespace?: string }> = ({
-  namespace,
-}) => (
+export const SecretForm: React.FC<{
+  namespace?: string;
+  editing?: boolean;
+}> = ({ namespace, editing }) => (
   <>
-    <NameAndNamespace namespace={namespace} />
+    <NameAndNamespace namespace={namespace} editing={editing} />
     <Row gutter={12}>
       <Col span={12}>
         <Form.Item name="type" label="类型">
