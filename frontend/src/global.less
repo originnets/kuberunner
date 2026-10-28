@@ -1,0 +1,324 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: #f4f6fb;
+}
+
+/* 更细、更轻的滚动条，表格与代码块共用 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.16);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.28);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::selection {
+  background: rgba(22, 119, 255, 0.18);
+}
+
+.colorWeak {
+  filter: invert(80%);
+}
+
+.ant-layout {
+  min-height: 100vh;
+}
+.ant-pro-sider.ant-layout-sider.ant-pro-sider-fixed {
+  left: unset;
+}
+
+/* 侧边栏：更克制的分隔与圆角选中态 */
+.ant-pro-sider {
+  border-right: 1px solid #eef1f6;
+}
+
+.ant-pro-sider-logo {
+  padding-block: 18px 14px !important;
+}
+
+.ant-pro-sider-collapsed .ant-pro-sider-link span:not([role='img']) {
+  display: none;
+}
+
+/* 顶部栏：轻量阴影，和内容区形成层次 */
+.ant-pro-layout .ant-pro-global-header {
+  box-shadow: 0 1px 0 0 #eef1f6;
+}
+
+/* 页面标题区留白 */
+.ant-pro-page-container-children-container {
+  padding-block: 16px 24px;
+}
+
+/* ProTable 卡片化 */
+.ant-pro-table .ant-pro-card {
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.ant-pro-table .ant-pro-table-search {
+  border-radius: 12px 12px 0 0;
+}
+
+/* 表格表头与行高 */
+.ant-table-thead > tr > th {
+  font-weight: 500 !important;
+  letter-spacing: 0;
+}
+
+.ant-table-tbody > tr > td {
+  padding-block: 12px !important;
+}
+
+/* 指标卡悬浮效果 */
+.kr-metric-card {
+  border: 1px solid #eef1f6;
+  border-radius: 12px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.kr-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(22, 119, 255, 0.35);
+  box-shadow: 0 14px 30px -20px rgba(16, 24, 40, 0.4);
+}
+
+/* 渐变 Hero 卡片 */
+.kr-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 28px;
+  color: #fff;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(120deg, #1677ff 0%, #2f54eb 55%, #531dab 100%);
+}
+
+.kr-hero::after {
+  content: '';
+  position: absolute;
+  right: -60px;
+  top: -80px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.kr-hero-meta {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* 代码块 */
+.kr-code {
+  margin: 0;
+  padding: 16px;
+  border-radius: 10px;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre;
+  overflow: auto;
+  background: rgba(127, 127, 127, 0.07);
+}
+
+.kr-log {
+  margin: 0;
+  padding: 16px;
+  min-height: 320px;
+  max-height: calc(100vh - 300px);
+  overflow: auto;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: #0b1020;
+  color: #d6deeb;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    monospace;
+}
+
+/* 终端容器 */
+.kr-terminal {
+  height: calc(100vh - 180px);
+  padding: 8px;
+  border-radius: 10px;
+  background: #0b1020;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+@media (max-width: 768px) {
+  .kr-hero {
+    padding: 20px;
+  }
+
+  .ant-table {
+    width: 100%;
+    overflow-x: auto;
+    &-thead > tr,
+    &-tbody > tr {
+      > th,
+      > td {
+        white-space: pre;
+        > span {
+          display: block;
+        }
+      }
+    }
+  }
+}
+
+/* 快捷入口行 */
+.kr-quick-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.kr-quick-link:hover {
+  background: #f4f7fb;
+}
+/* 页面上下文选择器 */
+.kr-context-bar {
+  .ant-typography {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 900px) {
+  .kr-context-bar .ant-typography {
+    display: none;
+  }
+}
+/* ================= 登录页科技背景 ================= */
+@keyframes kr-grid-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 0 64px, 64px 0;
+  }
+}
+
+@keyframes kr-orb-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(26px, -20px, 0) scale(1.06);
+  }
+}
+
+@keyframes kr-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.kr-login-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #e2e8f0;
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(37, 99, 235, 0.22), transparent 60%),
+    radial-gradient(60% 50% at 85% 90%, rgba(124, 58, 237, 0.16), transparent 60%),
+    linear-gradient(180deg, #050b18 0%, #071226 55%, #050b18 100%);
+}
+
+.kr-login-grid {
+  position: absolute;
+  inset: -64px;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(96, 165, 250, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(96, 165, 250, 0.09) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at 50% 26%, rgba(0, 0, 0, 0.95), transparent 76%);
+  animation: kr-grid-drift 26s linear infinite;
+}
+
+.kr-orb {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(92px);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: kr-orb-float 16s ease-in-out infinite;
+}
+
+.kr-orb-blue {
+  top: -140px;
+  left: -100px;
+  background: #1d4ed8;
+}
+
+.kr-orb-purple {
+  right: -120px;
+  bottom: -180px;
+  background: #6d28d9;
+  animation-delay: -6s;
+}
+
+.kr-login-card {
+  animation: kr-fade-up 0.5s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kr-login-grid,
+  .kr-orb {
+    animation: none;
+  }
+}

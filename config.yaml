@@ -1,5 +1,0 @@
-ListenAddress: ":80"
-Username: "admin"
-Password: "admin"
-KubeConfigs:
-  cluster1: "C:\\Users\\HUO\\Desktop\\config"
