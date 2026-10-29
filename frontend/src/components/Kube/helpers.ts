@@ -256,9 +256,44 @@ export function parseLinesInput(text?: string): Record<string, string> {
   return result;
 }
 
-/** 对象转 YAML 文本 */
+/**
+ * 递归去掉 YAML 中的空值（null/undefined、空对象、空数组），
+ * 保留 0、false 和空字符串等有意义的值。
+ */
+export function pruneEmptyValues(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    const items = value
+      .map((item) => pruneEmptyValues(item))
+      .filter((item) => item !== undefined);
+    return items.length ? items : undefined;
+  }
+
+  if (value && typeof value === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      const pruned = pruneEmptyValues(item);
+      if (pruned !== undefined) {
+        result[key] = pruned;
+      } else if (key === 'emptyDir') {
+        // emptyDir 通过空对象表达“空目录卷”，不能省略
+        result[key] = {};
+      }
+    }
+    return Object.keys(result).length ? result : undefined;
+  }
+
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  return value;
+}
+
+/** 对象转 YAML 文本（过滤空值，便于阅读与编辑） */
 export function toYaml(value: unknown): string {
-  return stringifyYaml(value, { lineWidth: 0 });
+  return stringifyYaml(pruneEmptyValues(value) ?? {}, { lineWidth: 0 });
 }
 
 /** YAML 文本转对象，失败时抛出带行号的错误信息 */
