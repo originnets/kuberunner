@@ -98,12 +98,6 @@ export const CREATE_KINDS: Record<CreateKind, CreateKindMeta> = {
   },
 };
 
-/** 资源接口 id → 表单类型（PVC/PV 的接口 id 与表单 key 不同） */
-export function toCreateKind(id: string): CreateKind | undefined {
-  if (id === 'persistentvolumeclaim') return 'pvc';
-  if (id === 'persistentvolume') return 'pv';
-  return id in CREATE_KINDS ? (id as CreateKind) : undefined;
-}
 
 const indent = (text: string, spaces: number) =>
   text
