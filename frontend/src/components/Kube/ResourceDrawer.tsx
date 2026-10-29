@@ -34,6 +34,22 @@ export interface ResourceDrawerProps {
   onClose: () => void;
 }
 
+const KIND_HINTS: Record<string, string> = {
+  pod: 'Pod',
+  deployment: 'Deployment',
+  statefulset: 'StatefulSet',
+  daemonset: 'DaemonSet',
+  service: 'Service',
+  ingress: 'Ingress',
+  configmap: 'ConfigMap',
+  secret: 'Secret',
+  pvc: 'PersistentVolumeClaim',
+  pv: 'PersistentVolume',
+  storageclass: 'StorageClass',
+  namespace: 'Namespace',
+  node: 'Node',
+};
+
 const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
   open,
   cluster,
@@ -133,7 +149,12 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
               {
                 key: 'info',
                 label: '概要',
-                children: <ResourceSummary detail={detail} />,
+                children: (
+                  <ResourceSummary
+                    detail={detail}
+                    kindHint={KIND_HINTS[resource.id]}
+                  />
+                ),
               },
               {
                 key: 'yaml',

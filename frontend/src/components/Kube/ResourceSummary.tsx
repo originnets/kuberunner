@@ -42,8 +42,8 @@ const kvTags = (values?: Record<string, string>) =>
     '-'
   );
 
-function statusOf(detail: KubeAPI.KubeObject): string {
-  switch (detail.kind) {
+function statusOf(detail: KubeAPI.KubeObject, kindHint?: string): string {
+  switch (detail.kind ?? kindHint) {
     case 'Pod':
       return podStatus(detail).text;
     case 'Deployment':
@@ -150,13 +150,15 @@ const volumeColumns: TableColumnsType<AnyRecord> = [
   { title: '挂载', dataIndex: 'mounts', ellipsis: true },
 ];
 
-const ResourceSummary: React.FC<{ detail: KubeAPI.KubeObject }> = ({
-  detail,
-}) => {
+const ResourceSummary: React.FC<{
+  detail: KubeAPI.KubeObject;
+  /** 列表行数据缺少 TypeMeta 时用于判断资源类型 */
+  kindHint?: string;
+}> = ({ detail, kindHint }) => {
   const spec = (detail.spec ?? {}) as AnyRecord;
   const metadata = (detail.metadata ?? {}) as AnyRecord;
   const status = (detail.status ?? {}) as AnyRecord;
-  const kind = detail.kind ?? '';
+  const kind = detail.kind ?? kindHint ?? '';
 
   const podSpec = kind === 'Pod' ? spec : (spec.template?.spec as AnyRecord) ?? {};
 
@@ -169,7 +171,7 @@ const ResourceSummary: React.FC<{ detail: KubeAPI.KubeObject }> = ({
       label: '类型',
       children: `${detail.apiVersion ?? '-'} / ${kind || '-'}`,
     },
-    { label: '状态', children: statusOf(detail) },
+    { label: '状态', children: statusOf(detail, kindHint) },
     { label: '创建时间', children: formatTime(metadata.creationTimestamp) },
     {
       label: 'UID',
@@ -513,8 +515,10 @@ const ResourceSummary: React.FC<{ detail: KubeAPI.KubeObject }> = ({
             {
               label: '状态',
               children: (
-                <Tag color={statusOf(detail) === 'Ready' ? 'success' : 'error'}>
-                  {statusOf(detail)}
+                <Tag
+                  color={statusOf(detail, kindHint) === 'Ready' ? 'success' : 'error'}
+                >
+                  {statusOf(detail, kindHint)}
                 </Tag>
               ),
             },
