@@ -154,18 +154,6 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
                   <ResourceSummary
                     detail={detail}
                     kindHint={KIND_HINTS[resource.id]}
-                    mode="brief"
-                  />
-                ),
-              },
-              {
-                key: 'detail',
-                label: '详细',
-                children: (
-                  <ResourceSummary
-                    detail={detail}
-                    kindHint={KIND_HINTS[resource.id]}
-                    mode="full"
                   />
                 ),
               },

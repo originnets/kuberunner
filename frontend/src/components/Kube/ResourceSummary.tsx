@@ -154,9 +154,7 @@ const ResourceSummary: React.FC<{
   detail: KubeAPI.KubeObject;
   /** 列表行数据缺少 TypeMeta 时用于判断资源类型 */
   kindHint?: string;
-  /** brief：仅展示基本信息；full：展示全部详情卡片 */
-  mode?: 'brief' | 'full';
-}> = ({ detail, kindHint, mode = 'full' }) => {
+}> = ({ detail, kindHint }) => {
   const spec = (detail.spec ?? {}) as AnyRecord;
   const metadata = (detail.metadata ?? {}) as AnyRecord;
   const status = (detail.status ?? {}) as AnyRecord;
@@ -597,7 +595,7 @@ const ResourceSummary: React.FC<{
       <Card size="small" title="基本信息">
         <Descriptions column={2} size="small" items={basicItems} />
       </Card>
-      {mode === 'full' ? cards : null}
+      {cards}
     </Space>
   );
 };
