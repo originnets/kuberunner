@@ -9,6 +9,7 @@ import {
   Button,
   Drawer,
   Empty,
+  Form,
   Space,
   Spin,
   Tabs,
@@ -19,6 +20,10 @@ import {
   getResourceDetail,
   type ResourceEndpoint,
 } from '@/services/kuberunner';
+import { toFormValues } from './create/editHelpers';
+import ResourceFormFields from './create/ResourceFormFields';
+import type { CreateKind } from './create/templates';
+import { CREATE_KINDS } from './create/templates';
 import { copyText, downloadFile, toYaml } from './helpers';
 import ResourceSummary from './ResourceSummary';
 
@@ -96,6 +101,17 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
 
   const yaml = useMemo(() => (detail ? toYaml(detail) : ''), [detail]);
 
+  const formKind = useMemo(() => {
+    if (resource.id === 'persistentvolumeclaim') return 'pvc' as CreateKind;
+    if (resource.id === 'persistentvolume') return 'pv' as CreateKind;
+    return resource.id as CreateKind;
+  }, [resource.id]);
+
+  const formValues = useMemo(
+    () => (detail ? toFormValues(formKind, detail) : {}),
+    [detail, formKind],
+  );
+
   const handleCopy = async () => {
     await copyText(yaml);
     message.success('已复制 YAML');
@@ -154,6 +170,27 @@ const ResourceDrawer: React.FC<ResourceDrawerProps> = ({
                     detail={detail}
                     kindHint={KIND_HINTS[resource.id]}
                   />
+                ),
+              },
+              {
+                key: 'detail',
+                label: '详细',
+                children: CREATE_KINDS[formKind] ? (
+                  <Form
+                    key={`${detail.metadata?.uid ?? name}-detail`}
+                    layout="vertical"
+                    disabled
+                    initialValues={formValues}
+                    preserve={false}
+                  >
+                    <ResourceFormFields
+                      kind={formKind}
+                      namespace={detail.metadata?.namespace}
+                      editing
+                    />
+                  </Form>
+                ) : (
+                  <Empty description="该资源暂不支持表单展示" />
                 ),
               },
               {
