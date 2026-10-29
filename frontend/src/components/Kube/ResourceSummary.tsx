@@ -154,7 +154,9 @@ const ResourceSummary: React.FC<{
   detail: KubeAPI.KubeObject;
   /** 列表行数据缺少 TypeMeta 时用于判断资源类型 */
   kindHint?: string;
-}> = ({ detail, kindHint }) => {
+  /** brief：仅展示基本信息；full：展示全部详情卡片 */
+  mode?: 'brief' | 'full';
+}> = ({ detail, kindHint, mode = 'full' }) => {
   const spec = (detail.spec ?? {}) as AnyRecord;
   const metadata = (detail.metadata ?? {}) as AnyRecord;
   const status = (detail.status ?? {}) as AnyRecord;
@@ -169,7 +171,7 @@ const ResourceSummary: React.FC<{
       : []),
     {
       label: '类型',
-      children: `${detail.apiVersion ?? '-'} / ${kind || '-'}`,
+      children: `${detail.apiVersion ?? '-'} / ${detail.kind ?? kindHint ?? '-'}`,
     },
     { label: '状态', children: statusOf(detail, kindHint) },
     { label: '创建时间', children: formatTime(metadata.creationTimestamp) },
@@ -252,13 +254,21 @@ const ResourceSummary: React.FC<{
           items={[
             { label: '期望副本', children: text(spec.replicas) },
             { label: '就绪副本', children: text(status.readyReplicas, '0') },
-            { label: '选择器', children: text(selectorText(spec.selector?.matchLabels)) },
-            { label: 'ServiceAccount', children: text(podSpec.serviceAccountName, 'default') },
+            {
+              label: '选择器',
+              children: text(selectorText(spec.selector?.matchLabels)),
+            },
+            {
+              label: 'ServiceAccount',
+              children: text(podSpec.serviceAccountName, 'default'),
+            },
             {
               label: '更新策略',
               children: text(
                 spec.strategy?.type ?? spec.updateStrategy?.type,
-                kind === 'StatefulSet' ? spec.podManagementPolicy : 'RollingUpdate',
+                kind === 'StatefulSet'
+                  ? spec.podManagementPolicy
+                  : 'RollingUpdate',
               ),
             },
             {
@@ -312,11 +322,20 @@ const ResourceSummary: React.FC<{
           pagination={false}
           dataSource={(spec.ports ?? []) as AnyRecord[]}
           columns={[
-            { title: '名称', dataIndex: 'name', width: 110, render: (v: string) => text(v) },
+            {
+              title: '名称',
+              dataIndex: 'name',
+              width: 110,
+              render: (value: string) => text(value),
+            },
             { title: '端口', dataIndex: 'port', width: 90 },
             { title: '目标端口', dataIndex: 'targetPort', width: 100 },
             { title: '协议', dataIndex: 'protocol', width: 80 },
-            { title: 'NodePort', dataIndex: 'nodePort', render: (v: unknown) => text(v) },
+            {
+              title: 'NodePort',
+              dataIndex: 'nodePort',
+              render: (value: unknown) => text(value),
+            },
           ]}
         />
       </Card>,
@@ -332,7 +351,9 @@ const ResourceSummary: React.FC<{
         path: path.path,
         pathType: path.pathType,
         service: path.backend?.service?.name,
-        port: path.backend?.service?.port?.number ?? path.backend?.service?.port?.name,
+        port:
+          path.backend?.service?.port?.number ??
+          path.backend?.service?.port?.name,
       })),
     );
     cards.push(
@@ -383,7 +404,11 @@ const ResourceSummary: React.FC<{
       value,
     }));
     cards.push(
-      <Card key="data" size="small" title={kind === 'Secret' ? '数据（已隐藏）' : '数据'}>
+      <Card
+        key="data"
+        size="small"
+        title={kind === 'Secret' ? '数据（已隐藏）' : '数据'}
+      >
         <Table
           rowKey="key"
           size="small"
@@ -467,9 +492,18 @@ const ResourceSummary: React.FC<{
           column={2}
           size="small"
           items={[
-            { label: 'Provisioner', children: text((detail as AnyRecord).provisioner) },
-            { label: '回收策略', children: text((detail as AnyRecord).reclaimPolicy) },
-            { label: '绑定模式', children: text((detail as AnyRecord).volumeBindingMode) },
+            {
+              label: 'Provisioner',
+              children: text((detail as AnyRecord).provisioner),
+            },
+            {
+              label: '回收策略',
+              children: text((detail as AnyRecord).reclaimPolicy),
+            },
+            {
+              label: '绑定模式',
+              children: text((detail as AnyRecord).volumeBindingMode),
+            },
             {
               label: '允许扩容',
               children: (detail as AnyRecord).allowVolumeExpansion ? '是' : '否',
@@ -516,7 +550,9 @@ const ResourceSummary: React.FC<{
               label: '状态',
               children: (
                 <Tag
-                  color={statusOf(detail, kindHint) === 'Ready' ? 'success' : 'error'}
+                  color={
+                    statusOf(detail, kindHint) === 'Ready' ? 'success' : 'error'
+                  }
                 >
                   {statusOf(detail, kindHint)}
                 </Tag>
@@ -524,7 +560,10 @@ const ResourceSummary: React.FC<{
             },
             { label: '角色', children: text(nodeRoles(detail)) },
             { label: '内网 IP', children: text(nodeAddress(detail)) },
-            { label: 'Kubelet', children: text(status.nodeInfo?.kubeletVersion) },
+            {
+              label: 'Kubelet',
+              children: text(status.nodeInfo?.kubeletVersion),
+            },
             { label: '操作系统', children: text(status.nodeInfo?.osImage) },
             {
               label: '容器运行时',
@@ -558,7 +597,7 @@ const ResourceSummary: React.FC<{
       <Card size="small" title="基本信息">
         <Descriptions column={2} size="small" items={basicItems} />
       </Card>
-      {cards}
+      {mode === 'full' ? cards : null}
     </Space>
   );
 };
