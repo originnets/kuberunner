@@ -179,15 +179,25 @@ export default defineConfig({
             headerSplitColor: 'transparent',
             rowHoverBg: '#f5f9ff',
             borderColor: '#eef1f6',
+            cellPaddingBlock: 12,
           },
           Card: {
             headerBg: 'transparent',
+            headerFontSize: 14,
+            headerHeight: 48,
+          },
+          Descriptions: {
+            labelBg: '#f8fafc',
+            titleMarginBottom: 12,
           },
           Button: {
             fontWeight: 500,
           },
           Tabs: {
             titleFontSize: 13,
+          },
+          Alert: {
+            borderRadiusLG: 10,
           },
         },
       },

@@ -1,13 +1,8 @@
-import { PlusOutlined } from '@ant-design/icons';
-import type { ActionType } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
-import { useModel } from '@umijs/max';
-import { Button, Space, Tag, Typography } from 'antd';
-import React, { useRef, useState } from 'react';
-import type { AppModel } from '@/models/app';
+import { Space, Tag, Typography } from 'antd';
+import React from 'react';
 import ResourceTable from '@/components/Kube/ResourceTable';
 import { ENDPOINTS } from '@/services/kuberunner';
-import CreateResourceDrawer from '@/components/Kube/create/CreateResourceDrawer';
 
 interface IngressRule {
   host?: string;
@@ -95,39 +90,14 @@ const columns: ProColumns<KubeAPI.KubeObject>[] = [
   },
 ];
 
-const IngressPage: React.FC = () => {
-  const { cluster } = useModel('app') as AppModel;
-  const [createOpen, setCreateOpen] = useState(false);
-  const actionRef = useRef<ActionType>(null);
-
-  return (
-    <>
-      <ResourceTable
-        actionRef={actionRef}
-        resource={ENDPOINTS.ingress}
-        title="Ingress"
-        description="为集群内的 Service 配置七层路由与 TLS 证书。"
-        columns={columns}
-        toolbar={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={!cluster}
-            onClick={() => setCreateOpen(true)}
-          >
-            新建
-          </Button>
-        }
-      />
-      <CreateResourceDrawer
-        kind="ingress"
-        cluster={cluster}
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={() => actionRef.current?.reload()}
-      />
-    </>
-  );
-};
+const IngressPage: React.FC = () => (
+  <ResourceTable
+    resource={ENDPOINTS.ingress}
+    title="Ingress"
+    description="为集群内的 Service 配置七层路由与 TLS 证书。"
+    columns={columns}
+    createKey="ingress"
+  />
+);
 
 export default IngressPage;

@@ -342,9 +342,7 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
       extra={<ContextBar />}
     >
       {description ? (
-        <Typography.Paragraph type="secondary" style={{ marginTop: -4 }}>
-          {description}
-        </Typography.Paragraph>
+        <div className="kr-page-desc">{description}</div>
       ) : null}
 
       {!cluster ? (
@@ -435,23 +433,13 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
           defaultPageSize,
           showSizeChanger: true,
           showQuickJumper: true,
+          showTotal: (value) => `共 ${value} 项`,
         }}
         options={{ density: true, fullScreen: true, setting: true, reload: true }}
         search={{ labelWidth: 'auto' }}
+        cardBordered
+        locale={{ emptyText: '暂无数据，请调整筛选条件或先创建资源' }}
         toolBarRender={() => [
-          toolbar,
-          <Tooltip
-            key="auto"
-            title={autoRefresh ? '关闭自动刷新' : '每 10 秒自动刷新'}
-          >
-            <Button
-              type={autoRefresh ? 'primary' : 'default'}
-              icon={<SyncOutlined spin={autoRefresh} />}
-              onClick={() => setAutoRefresh((value) => !value)}
-            >
-              自动
-            </Button>
-          </Tooltip>,
           createKey ? (
             <Button
               key="create"
@@ -463,9 +451,22 @@ const ResourceTable: React.FC<ResourceTableProps> = ({
               新建
             </Button>
           ) : null,
+          <Tooltip
+            key="auto"
+            title={autoRefresh ? '关闭自动刷新' : '每 10 秒自动刷新'}
+          >
+            <Button
+              type={autoRefresh ? 'primary' : 'default'}
+              icon={<SyncOutlined spin={autoRefresh} />}
+              onClick={() => setAutoRefresh((value) => !value)}
+            >
+              自动刷新
+            </Button>
+          </Tooltip>,
           <Button key="refresh" icon={<ReloadOutlined />} onClick={() => reload()}>
             刷新
           </Button>,
+          toolbar,
         ]}
         rowSelection={
           resource.remove

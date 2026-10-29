@@ -10,6 +10,7 @@ import {
   App,
   Badge,
   Button,
+  Card,
   Form,
   Input,
   Modal,
@@ -267,6 +268,14 @@ const ClusterManagePage: React.FC = () => {
       header={{ breadcrumb: {} }}
       extra={[
         <Button
+          key="create"
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreate}
+        >
+          添加集群
+        </Button>,
+        <Button
           key="refresh"
           icon={<ReloadOutlined />}
           loading={loading}
@@ -276,25 +285,29 @@ const ClusterManagePage: React.FC = () => {
         </Button>,
       ]}
     >
-      <Space style={{ marginBottom: 12 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          添加集群
-        </Button>
-        <Typography.Text type="secondary">
-          添加时会校验认证信息并尝试连接集群。
-        </Typography.Text>
-      </Space>
-
-      <Table<ClusterStatus>
-        rowKey="name"
-        loading={loading}
-        columns={columns}
-        dataSource={statuses}
-        pagination={false}
-        size="middle"
-        scroll={{ x: 'max-content' }}
-        locale={{ emptyText: '暂无集群，请添加 kubeconfig 或 Token 后使用' }}
-      />
+      <Card
+        className="kr-panel-card"
+        title="集群列表"
+        extra={
+          <Typography.Text type="secondary">
+            共 {statuses.length} 个
+          </Typography.Text>
+        }
+        styles={{ body: { padding: 16 } }}
+      >
+        <Table<ClusterStatus>
+          rowKey="name"
+          loading={loading}
+          columns={columns}
+          dataSource={statuses}
+          pagination={false}
+          size="middle"
+          scroll={{ x: 'max-content' }}
+          locale={{
+            emptyText: '暂无集群，点击右上角“添加集群”接入 kubeconfig 或 Token',
+          }}
+        />
+      </Card>
 
       <Modal
         open={open}

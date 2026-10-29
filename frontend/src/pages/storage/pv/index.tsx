@@ -1,14 +1,9 @@
-import { PlusOutlined } from '@ant-design/icons';
-import type { ActionType } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
-import { useModel } from '@umijs/max';
-import { Button, Space, Tag } from 'antd';
-import React, { useRef, useState } from 'react';
-import type { AppModel } from '@/models/app';
+import { Space, Tag } from 'antd';
+import React from 'react';
 import ResourceTable from '@/components/Kube/ResourceTable';
 import StatusTag from '@/components/Kube/StatusTag';
 import { ENDPOINTS } from '@/services/kuberunner';
-import CreateResourceDrawer from '@/components/Kube/create/CreateResourceDrawer';
 
 const columns: ProColumns<KubeAPI.KubeObject>[] = [
   {
@@ -86,39 +81,14 @@ const columns: ProColumns<KubeAPI.KubeObject>[] = [
   },
 ];
 
-const PersistentVolumePage: React.FC = () => {
-  const { cluster } = useModel('app') as AppModel;
-  const actionRef = useRef<ActionType>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-
-  return (
-    <>
-      <ResourceTable
-        actionRef={actionRef}
-        resource={ENDPOINTS.pv}
-        title="PersistentVolume"
-        description="集群级存储卷，可由 StorageClass 动态创建，也可以手工绑定。"
-        columns={columns}
-        toolbar={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            disabled={!cluster}
-            onClick={() => setCreateOpen(true)}
-          >
-            新建
-          </Button>
-        }
-      />
-      <CreateResourceDrawer
-        kind="pv"
-        open={createOpen}
-        cluster={cluster}
-        onClose={() => setCreateOpen(false)}
-        onCreated={() => actionRef.current?.reload()}
-      />
-    </>
-  );
-};
+const PersistentVolumePage: React.FC = () => (
+  <ResourceTable
+    resource={ENDPOINTS.pv}
+    title="PersistentVolume"
+    description="集群级存储卷，可由 StorageClass 动态创建，也可以手工绑定。"
+    columns={columns}
+    createKey="pv"
+  />
+);
 
 export default PersistentVolumePage;
