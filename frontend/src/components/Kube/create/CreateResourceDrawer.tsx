@@ -30,17 +30,8 @@ import {
   buildStorageClass,
   buildWorkload,
 } from './builders';
-import { ConfigMapForm, SecretForm } from './DataForms';
 import { mergeResource, toFormValues } from './editHelpers';
-import IngressForm from './IngressForm';
-import ServiceForm from './ServiceForm';
-import {
-  NamespaceForm,
-  PvcForm,
-  PvForm,
-  StorageClassForm,
-} from './StorageForms';
-import WorkloadForm from './WorkloadForm';
+import ResourceFormFields from './ResourceFormFields';
 import type { CreateKind } from './templates';
 import { buildTemplate, CREATE_KINDS } from './templates';
 
@@ -220,48 +211,6 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
     form.setFieldsValue(initialValues);
   }, [open, kind, template, initialValues, form]);
 
-  const renderForm = () => {
-    switch (kind) {
-      case 'deployment':
-      case 'statefulset':
-      case 'daemonset':
-      case 'pod':
-        return (
-          <WorkloadForm
-            kind={
-              (kind === 'deployment'
-                ? 'Deployment'
-                : kind === 'statefulset'
-                  ? 'StatefulSet'
-                  : kind === 'daemonset'
-                    ? 'DaemonSet'
-                    : 'Pod') as WorkloadKind | 'Pod'
-            }
-            namespace={namespace}
-            editing={editing}
-          />
-        );
-      case 'service':
-        return <ServiceForm namespace={namespace} editing={editing} />;
-      case 'configmap':
-        return <ConfigMapForm namespace={namespace} editing={editing} />;
-      case 'secret':
-        return <SecretForm namespace={namespace} editing={editing} />;
-      case 'pvc':
-        return <PvcForm namespace={namespace} editing={editing} />;
-      case 'namespace':
-        return <NamespaceForm editing={editing} />;
-      case 'ingress':
-        return <IngressForm namespace={namespace} editing={editing} />;
-      case 'pv':
-        return <PvForm editing={editing} />;
-      case 'storageclass':
-        return <StorageClassForm editing={editing} />;
-      default:
-        return null;
-    }
-  };
-
   const submit = async () => {
     setError(undefined);
     setSubmitting(true);
@@ -374,7 +323,11 @@ const CreateResourceDrawer: React.FC<CreateResourceDrawerProps> = ({
                     initialValues={initialValues}
                     preserve={false}
                   >
-                    {renderForm()}
+                    <ResourceFormFields
+                      kind={kind}
+                      namespace={namespace}
+                      editing={editing}
+                    />
                   </Form>
                 ),
               },
